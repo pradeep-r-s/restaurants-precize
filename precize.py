@@ -1,66 +1,83 @@
 import requests
-from bs4 import BeautifulSoup
 import json
-from googlesearch import search
-import random
-import time
 
-user_agents = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:52.0) Gecko/20100101 Firefox/52.0"
-]
+def get_top_restaurants(city_name, api_key, cse_id):
+    """
+    Fetch the top 10 restaurants in the specified city using Google Custom Search API.
+    """
+    print(f"Fetching top restaurants for '{city_name}' based on ratings and reviews...")
+    search_query = f"top 10 restaurants in {city_name} with ratings and reviews"
+    url = f"https://www.googleapis.com/customsearch/v1?key={api_key}&cx={cse_id}&q={search_query}"
 
-def get_top_restaurants(city_name):
-    query = f"top restaurants in {city_name}"
-    search_results = list(search(query, num_results=10))  # Convert to a list
-    
-    restaurant_data = {}
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an error for HTTP status codes 4xx/5xx
+        data = response.json()
 
-    for result in search_results:
-        try:
-            headers = {'User-Agent': random.choice(user_agents)}
-            response = requests.get(result, headers=headers)
-            soup = BeautifulSoup(response.text, 'html.parser')
-            
-            restaurants_on_page = soup.find_all(['h2', 'h3'], string=True) 
-            
-            for restaurant in restaurants_on_page:
-                name = restaurant.get_text().strip()
-                rating = "N/A"
-                reviews = "N/A"
-                
-                rating_tag = soup.find('span', {'class': 'rating-class'}) 
-                if rating_tag:
-                    rating = rating_tag.get_text().strip()
-                
-                reviews_tag = soup.find('span', {'class': 'reviews-class'}) 
-                if reviews_tag:
-                    reviews = reviews_tag.get_text().strip()
-                
+        restaurant_data = {}
+        if 'items' in data:
+            for item in data['items']:
+                name = item.get('title', 'Unknown Restaurant')
+                snippet = item.get('snippet', 'No details available.')
+                link = item.get('link', 'No URL available.')
+
+                rating = None
+                reviews = None
+                try:
+                    # Assuming ratings are embedded in the snippet, you can adapt this logic
+                    if "rating" in snippet.lower():
+                        rating = snippet.split("rating:")[1].split(",")[0].strip()
+                    if "reviews" in snippet.lower():
+                        reviews = snippet.split("reviews:")[1].split(",")[0].strip()
+                except IndexError:
+                    pass
+
+                # Fallback if rating or reviews are not found
+                if not rating:
+                    rating = "Rating not available"
+                if not reviews:
+                    reviews = "No reviews available."
+
                 restaurant_data[name] = {
-                    'Rating': rating,
-                    'Reviews': reviews,
-                    'URL': result
+                    'First Rating': rating,
+                    'review': reviews,
+                    'Link': link
                 }
-            
-            time.sleep(random.randint(1, 3))
-        
-        except Exception as e:
-            print(f"Error while scraping {result}: {e}")
-            continue
-    
-    return restaurant_data
+            print(f"Fetched {len(restaurant_data)} restaurants.")
+        else:
+            print("No results found in the search query.")
+
+        return restaurant_data
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error while making API request: {e}")
+        return {}
 
 def save_to_json(data, filename='restaurants.json'):
-    with open(filename, 'w') as json_file:
-        json.dump(data, json_file, indent=4)
+    """
+    Save restaurant data to a JSON file.
+    """
+    if data:
+        with open(filename, 'w') as json_file:
+            json.dump(data, json_file, indent=4)
+        print(f"Data saved to '{filename}'.")
+    else:
+        print("No data to save.")
 
 def main():
+    """
+    Main function to get input from the user and execute the API call.
+    """
+    api_key = "AIzaSyDLG62DwvEJoZStXUkUHmQeGKHqFKVLvjQ"  # Your API Key
+    cse_id = "a217bb43341ad4b78"  # Your Search Engine ID
+
+    if not api_key or not cse_id:
+        print("Please ensure your API Key and CSE ID are set correctly.")
+        return
+
     city_name = input("Enter the name of the city: ")
-    restaurant_data = get_top_restaurants(city_name)
+    restaurant_data = get_top_restaurants(city_name, api_key, cse_id)
     save_to_json(restaurant_data)
-    print(f"Top 10 restaurants data for {city_name} has been saved to 'restaurants.json'.")
 
 if __name__ == '__main__':
     main()
