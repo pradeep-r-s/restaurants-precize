@@ -68,8 +68,8 @@ def main():
     """
     Main function to get input from the user and execute the API call.
     """
-    api_key = "AIzaSyDLG62DwvEJoZStXUkUHmQeGKHqFKVLvjQ"  # Your API Key
-    cse_id = "a217bb43341ad4b78"  # Your Search Engine ID
+    api_key = "abc"  # Your API Key
+    cse_id = "efg"  # Your Search Engine ID
 
     if not api_key or not cse_id:
         print("Please ensure your API Key and CSE ID are set correctly.")
