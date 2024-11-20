@@ -34,8 +34,8 @@ def main():
     city = input("Enter the name of the city: ")
     food_type = input("Enter the type of food: ")
 
-    api_key = "AIzaSyDLG62DwvEJoZStXUkUHmQeGKHqFKVLvjQ"
-    cse_id = "a217bb43341ad4b78"
+    api_key = "xxxxxxxx-xxxxx"
+    cse_id = "xxxxxx-xxxxxxxx"
 
     restaurant_data = get_top_restaurants(city, food_type, api_key, cse_id)
 
